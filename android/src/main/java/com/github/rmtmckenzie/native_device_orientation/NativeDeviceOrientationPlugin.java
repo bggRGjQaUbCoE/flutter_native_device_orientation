@@ -118,6 +118,7 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
     }
 
     boolean useSensor = false;
+    boolean checkIsAutoRotate = true;
     // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
     if (parameters instanceof Map) {
       @SuppressWarnings("unchecked")
@@ -127,6 +128,11 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
         Boolean useSensorNullable = (Boolean) params.get("useSensor");
         useSensor = useSensorNullable != null && useSensorNullable;
       }
+
+      if (params.containsKey("checkIsAutoRotate")) {
+        Boolean checkIsAutoRotateNullable = (Boolean) params.get("checkIsAutoRotate");
+        checkIsAutoRotate = checkIsAutoRotateNullable != null && checkIsAutoRotateNullable;
+      }
     }
 
     // initialize the callback. It is the same for both listeners.
@@ -134,7 +140,7 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
 
     if (useSensor) {
       Log.i("NDOP", "listening using sensor listener");
-      listener = new SensorOrientationListener(activity, callback);
+      listener = new SensorOrientationListener(activity, callback, checkIsAutoRotate);
     } else {
       Log.i("NDOP", "listening using window listener");
       listener = new OrientationListener(reader, activity, callback);

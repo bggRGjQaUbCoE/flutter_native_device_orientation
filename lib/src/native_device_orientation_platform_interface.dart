@@ -35,6 +35,7 @@ abstract class NativeDeviceOrientationPlatform extends PlatformInterface {
 
   Stream<NativeDeviceOrientation> onOrientationChanged({
     bool useSensor = false,
+    bool checkIsAutoRotate = true,
     NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
   });
 }

@@ -30,18 +30,20 @@ public class SensorOrientationListener implements IOrientationListener {
   private final Activity activity;
   private final OrientationCallback callback;
   private final Rate rate;
+  private final boolean checkIsAutoRotate;
 
   private OrientationEventListener orientationEventListener;
   private NativeOrientation lastOrientation = null;
 
-  public SensorOrientationListener(Activity activity, OrientationCallback callback, Rate rate) {
+  public SensorOrientationListener(Activity activity, OrientationCallback callback, Rate rate, boolean checkIsAutoRotate) {
     this.activity = activity;
     this.callback = callback;
     this.rate = rate;
+    this.checkIsAutoRotate = checkIsAutoRotate;
   }
 
-  public SensorOrientationListener(Activity activity, OrientationCallback callback) {
-    this(activity, callback, Rate.ui);
+  public SensorOrientationListener(Activity activity, OrientationCallback callback, boolean checkIsAutoRotate) {
+    this(activity, callback, Rate.ui, checkIsAutoRotate);
   }
 
 
@@ -55,6 +57,10 @@ public class SensorOrientationListener implements IOrientationListener {
     orientationEventListener = new OrientationEventListener(activity, rate.nativeValue) {
       @Override
       public void onOrientationChanged(int angle) {
+        if (checkIsAutoRotate && android.provider.Settings.System.getInt(activity.getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) != 1) {
+          return;
+        }
+
         NativeOrientation newOrientation = calculateSensorOrientation(angle);
 
         if (!newOrientation.equals(lastOrientation)) {

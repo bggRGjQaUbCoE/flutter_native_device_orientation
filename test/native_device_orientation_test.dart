@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:native_device_orientation/src/native_device_orientation_method_channel.dart';
-import 'package:native_device_orientation/src/native_device_orientation_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockNativeDeviceOrientationPlatform with MockPlatformInterfaceMixin implements NativeDeviceOrientationPlatform {
   @override
   Stream<NativeDeviceOrientation> onOrientationChanged({
     bool useSensor = false,
+    bool checkIsAutoRotate = true,
     NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
   }) async* {
     yield NativeDeviceOrientation.landscapeLeft;
@@ -47,23 +47,23 @@ void main() {
     });
 
     test('pause', () async {
-      await NativeDeviceOrientationCommunicator().pause();
+      await NativeDeviceOrientationPlatform.instance.pause();
     });
 
     test('resume', () async {
-      await NativeDeviceOrientationCommunicator().resume();
+      await NativeDeviceOrientationPlatform.instance.resume();
     });
 
     test('orientation', () async {
-      expect(await NativeDeviceOrientationCommunicator().orientation(), NativeDeviceOrientation.landscapeRight);
+      expect(await NativeDeviceOrientationPlatform.instance.orientation(), NativeDeviceOrientation.landscapeRight);
       expect(
-        await NativeDeviceOrientationCommunicator().orientation(useSensor: true),
+        await NativeDeviceOrientationPlatform.instance.orientation(useSensor: true),
         NativeDeviceOrientation.landscapeLeft,
       );
     });
 
     test('onOrientationChanged', () async {
-      final stream = NativeDeviceOrientationCommunicator().onOrientationChanged();
+      final stream = NativeDeviceOrientationPlatform.instance.onOrientationChanged();
 
       var numEvents = 0;
 

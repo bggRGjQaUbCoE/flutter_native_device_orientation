@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/services.dart' show MethodChannel, EventChannel;
 import 'package:native_device_orientation/native_device_orientation.dart';
-import 'package:native_device_orientation/src/native_device_orientation.dart';
-import 'package:native_device_orientation/src/native_device_orientation_platform_interface.dart';
 
 NativeDeviceOrientation _fromString(String orientationString) {
   switch (orientationString) {
@@ -23,8 +21,9 @@ NativeDeviceOrientation _fromString(String orientationString) {
 class _OrientationStream {
   final Stream<NativeDeviceOrientation> stream;
   final bool useSensor;
+  final bool checkIsAutoRotate;
 
-  _OrientationStream({required this.stream, required this.useSensor});
+  _OrientationStream({required this.stream, required this.useSensor, required this.checkIsAutoRotate});
 }
 
 /// An implementation of [NativeDeviceOrientationPlatform] that uses method channels.
@@ -63,17 +62,20 @@ class MethodChannelNativeDeviceOrientation extends NativeDeviceOrientationPlatfo
   @override
   Stream<NativeDeviceOrientation> onOrientationChanged({
     bool useSensor = false,
+    bool checkIsAutoRotate = true,
     NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
   }) {
-    if (_stream == null || _stream!.useSensor != useSensor) {
+    if (_stream == null || _stream!.useSensor != useSensor || _stream!.checkIsAutoRotate != checkIsAutoRotate) {
       final params = <String, dynamic>{
         'useSensor': useSensor,
+        'checkIsAutoRotate': checkIsAutoRotate,
       };
       _stream = _OrientationStream(
         stream: eventChannel.receiveBroadcastStream(params).map((dynamic event) {
           return _fromString(event);
         }),
         useSensor: useSensor,
+        checkIsAutoRotate: checkIsAutoRotate,
       );
     }
     return _stream!.stream
