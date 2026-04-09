@@ -2,9 +2,11 @@ package com.github.rmtmckenzie.native_device_orientation;
 
 import android.app.Activity;
 import android.content.Context;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.flutter.Log;
@@ -111,6 +113,8 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
     }
   }
 
+  private boolean checkIsAutoRotate = true;
+
   @Override
   public void onListen(Object parameters, final EventChannel.EventSink eventSink) {
     if (activity == null) {
@@ -118,7 +122,6 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
     }
 
     boolean useSensor = false;
-    boolean checkIsAutoRotate = true;
     // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
     if (parameters instanceof Map) {
       @SuppressWarnings("unchecked")
@@ -136,11 +139,20 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
     }
 
     // initialize the callback. It is the same for both listeners.
-    IOrientationListener.OrientationCallback callback = orientation -> eventSink.success(orientation.name());
+    IOrientationListener.OrientationCallback callback = orientation -> {
+      if (checkIsAutoRotate) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("orientation", orientation.name());
+        map.put("isAutoRotate", Settings.System.getInt(activity.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1);
+        eventSink.success(map);
+        return;
+      }
+      eventSink.success(orientation.name());
+    };
 
     if (useSensor) {
       Log.i("NDOP", "listening using sensor listener");
-      listener = new SensorOrientationListener(activity, callback, checkIsAutoRotate);
+      listener = new SensorOrientationListener(activity, callback);
     } else {
       Log.i("NDOP", "listening using window listener");
       listener = new OrientationListener(reader, activity, callback);

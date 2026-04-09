@@ -1,7 +1,11 @@
-import 'package:native_device_orientation/native_device_orientation.dart';
-import 'package:native_device_orientation/src/native_device_orientation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:native_device_orientation/src/native_device_orientation_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
+typedef OrientationParams = ({
+  DeviceOrientation orientation,
+  bool? isAutoRotate,
+});
 
 abstract class NativeDeviceOrientationPlatform extends PlatformInterface {
   /// Constructs a NativeDeviceOrientationPlatform.
@@ -9,7 +13,8 @@ abstract class NativeDeviceOrientationPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static NativeDeviceOrientationPlatform _instance = MethodChannelNativeDeviceOrientation();
+  static NativeDeviceOrientationPlatform _instance =
+      MethodChannelNativeDeviceOrientation();
 
   /// The default instance of [NativeDeviceOrientationPlatform] to use.
   ///
@@ -24,18 +29,18 @@ abstract class NativeDeviceOrientationPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<NativeDeviceOrientation> orientation({
-    bool useSensor = false,
-    NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
-  });
-
   Future<void> pause();
 
   Future<void> resume();
 
-  Stream<NativeDeviceOrientation> onOrientationChanged({
+  Future<DeviceOrientation> orientation({
+    bool useSensor = false,
+    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
+  });
+
+  Stream<OrientationParams> onOrientationChanged({
     bool useSensor = false,
     bool checkIsAutoRotate = true,
-    NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
+    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   });
 }

@@ -1,28 +1,31 @@
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:native_device_orientation/src/native_device_orientation_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-class MockNativeDeviceOrientationPlatform with MockPlatformInterfaceMixin implements NativeDeviceOrientationPlatform {
+class MockDeviceOrientationPlatform
+    with MockPlatformInterfaceMixin
+    implements NativeDeviceOrientationPlatform {
   @override
-  Stream<NativeDeviceOrientation> onOrientationChanged({
+  Stream<OrientationParams> onOrientationChanged({
     bool useSensor = false,
     bool checkIsAutoRotate = true,
-    NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
+    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) async* {
-    yield NativeDeviceOrientation.landscapeLeft;
-    yield NativeDeviceOrientation.landscapeRight;
+    yield (orientation: DeviceOrientation.landscapeLeft, isAutoRotate: null);
+    yield (orientation: DeviceOrientation.landscapeRight, isAutoRotate: null);
   }
 
   @override
-  Future<NativeDeviceOrientation> orientation({
+  Future<DeviceOrientation> orientation({
     bool useSensor = false,
-    NativeDeviceOrientation defaultOrientation = NativeDeviceOrientation.portraitUp,
+    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) async {
     if (useSensor) {
-      return NativeDeviceOrientation.landscapeLeft;
+      return DeviceOrientation.landscapeLeft;
     } else {
-      return NativeDeviceOrientation.landscapeRight;
+      return DeviceOrientation.landscapeRight;
     }
   }
 
@@ -34,15 +37,18 @@ class MockNativeDeviceOrientationPlatform with MockPlatformInterfaceMixin implem
 }
 
 void main() {
-  final NativeDeviceOrientationPlatform initialPlatform = NativeDeviceOrientationPlatform.instance;
+  final NativeDeviceOrientationPlatform initialPlatform =
+      NativeDeviceOrientationPlatform.instance;
 
   test('$MethodChannelNativeDeviceOrientation is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelNativeDeviceOrientation>());
+    expect(
+        initialPlatform, isInstanceOf<MethodChannelNativeDeviceOrientation>());
   });
 
   group('test', () {
     setUp(() {
-      MockNativeDeviceOrientationPlatform fakePlatform = MockNativeDeviceOrientationPlatform();
+      MockDeviceOrientationPlatform fakePlatform =
+          MockDeviceOrientationPlatform();
       NativeDeviceOrientationPlatform.instance = fakePlatform;
     });
 
@@ -55,15 +61,18 @@ void main() {
     });
 
     test('orientation', () async {
-      expect(await NativeDeviceOrientationPlatform.instance.orientation(), NativeDeviceOrientation.landscapeRight);
+      expect(await NativeDeviceOrientationPlatform.instance.orientation(),
+          DeviceOrientation.landscapeRight);
       expect(
-        await NativeDeviceOrientationPlatform.instance.orientation(useSensor: true),
-        NativeDeviceOrientation.landscapeLeft,
+        await NativeDeviceOrientationPlatform.instance
+            .orientation(useSensor: true),
+        DeviceOrientation.landscapeLeft,
       );
     });
 
     test('onOrientationChanged', () async {
-      final stream = NativeDeviceOrientationPlatform.instance.onOrientationChanged();
+      final stream =
+          NativeDeviceOrientationPlatform.instance.onOrientationChanged();
 
       var numEvents = 0;
 

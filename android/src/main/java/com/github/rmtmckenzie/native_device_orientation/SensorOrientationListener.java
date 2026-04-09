@@ -30,20 +30,27 @@ public class SensorOrientationListener implements IOrientationListener {
   private final Activity activity;
   private final OrientationCallback callback;
   private final Rate rate;
-  private final boolean checkIsAutoRotate;
 
   private OrientationEventListener orientationEventListener;
   private NativeOrientation lastOrientation = null;
+  private int angleOffset = 0;
 
-  public SensorOrientationListener(Activity activity, OrientationCallback callback, Rate rate, boolean checkIsAutoRotate) {
+  public SensorOrientationListener(Activity activity, OrientationCallback callback, Rate rate) {
     this.activity = activity;
     this.callback = callback;
     this.rate = rate;
-    this.checkIsAutoRotate = checkIsAutoRotate;
+    // orientation is 0 in the default orientation mode. This is portait-mode for phones
+    // and landscape for tablets. We have to compensate this by calculating the default orientation,
+    // and applying an offset.
+    int defaultDeviceOrientation = getDeviceDefaultOrientation();
+    if (defaultDeviceOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+      // add offset to landscape
+      angleOffset = 90;
+    }
   }
 
-  public SensorOrientationListener(Activity activity, OrientationCallback callback, boolean checkIsAutoRotate) {
-    this(activity, callback, Rate.ui, checkIsAutoRotate);
+  public SensorOrientationListener(Activity activity, OrientationCallback callback) {
+    this(activity, callback, Rate.ui);
   }
 
 
@@ -57,13 +64,9 @@ public class SensorOrientationListener implements IOrientationListener {
     orientationEventListener = new OrientationEventListener(activity, rate.nativeValue) {
       @Override
       public void onOrientationChanged(int angle) {
-        if (checkIsAutoRotate && android.provider.Settings.System.getInt(activity.getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) != 1) {
-          return;
-        }
-
         NativeOrientation newOrientation = calculateSensorOrientation(angle);
 
-        if (!newOrientation.equals(lastOrientation)) {
+        if (newOrientation != null && !newOrientation.equals(lastOrientation)) {
           lastOrientation = newOrientation;
           callback.receive(newOrientation);
         }
@@ -85,40 +88,19 @@ public class SensorOrientationListener implements IOrientationListener {
     if (angle == OrientationEventListener.ORIENTATION_UNKNOWN) {
       return NativeOrientation.Unknown;
     }
-    NativeOrientation returnOrientation;
+    NativeOrientation returnOrientation = null;
 
-    final int tolerance = 45;
-    angle += tolerance;
-
-    // orientation is 0 in the default orientation mode. This is portait-mode for phones
-    // and landscape for tablets. We have to compensate this by calculating the default orientation,
-    // and applying an offset.
-    int defaultDeviceOrientation = getDeviceDefaultOrientation();
-    if (defaultDeviceOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-      // add offset to landscape
-      angle += 90;
-    }
-
+    angle += angleOffset;
     angle = angle % 360;
-    int screenOrientation = angle / 90;
 
-    switch (screenOrientation) {
-      case 0:
+    if (angle < 20 || angle > 340) {
         returnOrientation = NativeOrientation.PortraitUp;
-        break;
-      case 1:
+    } else if (angle > 70 && angle < 110) {
         returnOrientation = NativeOrientation.LandscapeRight;
-        break;
-      case 2:
+    } else if (angle > 160 && angle < 200) {
         returnOrientation = NativeOrientation.PortraitDown;
-        break;
-      case 3:
+    } else if (angle > 250 && angle < 290) {
         returnOrientation = NativeOrientation.LandscapeLeft;
-        break;
-
-      default:
-        returnOrientation = NativeOrientation.Unknown;
-
     }
 
     return returnOrientation;
