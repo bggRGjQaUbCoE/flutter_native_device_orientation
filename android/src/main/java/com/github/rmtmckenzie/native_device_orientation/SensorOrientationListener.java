@@ -45,7 +45,7 @@ public class SensorOrientationListener implements IOrientationListener {
     int defaultDeviceOrientation = getDeviceDefaultOrientation();
     if (defaultDeviceOrientation == Configuration.ORIENTATION_LANDSCAPE) {
       // add offset to landscape
-      angleOffset = 90;
+      angleOffset = 270;
     }
   }
 
@@ -86,7 +86,8 @@ public class SensorOrientationListener implements IOrientationListener {
 
   public NativeOrientation calculateSensorOrientation(int angle) {
     if (angle == OrientationEventListener.ORIENTATION_UNKNOWN) {
-      return NativeOrientation.Unknown;
+      // return NativeOrientation.Unknown;
+      return null;
     }
     NativeOrientation returnOrientation = null;
 

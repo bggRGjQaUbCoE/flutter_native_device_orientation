@@ -21,11 +21,14 @@ class DisplayOrientationListener: OrientationListener {
   }
   
   func once() -> FlutterError? {
-    callback(getDeviceOrientation())
+    guard let orientation = getDeviceOrientation() else {
+      return nil
+    }
+    callback(orientation)
     return nil
   }
   
-  private func getDeviceOrientation() -> String {
+  private func getDeviceOrientation() -> String? {
     switch (UIDevice.current.orientation) {
     case .portrait:
       return PORTRAIT_UP
@@ -38,18 +41,16 @@ class DisplayOrientationListener: OrientationListener {
     case .landscapeLeft:
       // return right for left, see above
       return LANDSCAPE_RIGHT
-    case .faceUp:
-      return lastOrientation ?? PORTRAIT_UP
-    case .faceDown:
-      return lastOrientation ?? PORTRAIT_DOWN
     default:
-      return UNKNOWN
+      return nil
     }
   }
   
   @objc private func receiveOrientationChange() {
-    let orientation = getDeviceOrientation()
-    
+    guard let orientation = getDeviceOrientation() else {
+        return
+    }
+
     if orientation != lastOrientation {
       lastOrientation = orientation
       callback(orientation)
