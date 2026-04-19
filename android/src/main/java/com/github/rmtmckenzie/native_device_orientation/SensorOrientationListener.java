@@ -94,13 +94,13 @@ public class SensorOrientationListener implements IOrientationListener {
     angle += angleOffset;
     angle = angle % 360;
 
-    if (angle < 20 || angle > 340) {
+    if (angle < 10 || angle > 350) {
         returnOrientation = NativeOrientation.PortraitUp;
-    } else if (angle > 70 && angle < 110) {
+    } else if (angle > 80 && angle < 100) {
         returnOrientation = NativeOrientation.LandscapeRight;
-    } else if (angle > 160 && angle < 200) {
+    } else if (angle > 170 && angle < 190) {
         returnOrientation = NativeOrientation.PortraitDown;
-    } else if (angle > 250 && angle < 290) {
+    } else if (angle > 260 && angle < 280) {
         returnOrientation = NativeOrientation.LandscapeLeft;
     }
 
