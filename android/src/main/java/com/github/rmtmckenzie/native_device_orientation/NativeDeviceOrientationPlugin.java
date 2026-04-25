@@ -1,7 +1,6 @@
 package com.github.rmtmckenzie.native_device_orientation;
 
 import android.app.Activity;
-import android.content.Context;
 import android.provider.Settings;
 
 import androidx.annotation.NonNull;
@@ -23,148 +22,147 @@ import io.flutter.plugin.common.MethodChannel.Result;
  * NativeDeviceOrientationPlugin
  */
 public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler, ActivityAware {
-  private final OrientationReader reader = new OrientationReader();
-  private final SensorOrientationReader sensorReader = new SensorOrientationReader();
-  private MethodChannel channel;
-  private EventChannel eventChannel;
-  private Activity activity;
-  private IOrientationListener listener;
+    private final OrientationReader reader = new OrientationReader();
+    private final SensorOrientationReader sensorReader = new SensorOrientationReader();
+    private MethodChannel channel;
+    private EventChannel eventChannel;
+    private Activity activity;
+    private IOrientationListener listener;
+    private boolean checkIsAutoRotate = true;
 
-  @Override
-  public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-    channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "native_device_orientation");
-    channel.setMethodCallHandler(this);
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
+        channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "native_device_orientation");
+        channel.setMethodCallHandler(this);
 
-    eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), "native_device_orientation_events");
-    eventChannel.setStreamHandler(this);
-  }
-
-  @Override
-  public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-    if (listener != null) {
-      listener.stopOrientationListener();
-      listener = null;
+        eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), "native_device_orientation_events");
+        eventChannel.setStreamHandler(this);
     }
-    channel.setMethodCallHandler(null);
-    eventChannel.setStreamHandler(null);
-  }
 
-  @Override
-  public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-    this.activity = binding.getActivity();
-  }
-
-  @Override
-  public void onDetachedFromActivity() {
-    if (listener != null) {
-      listener.stopOrientationListener();
-      listener = null;
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        if (listener != null) {
+            listener.stopOrientationListener();
+            listener = null;
+        }
+        channel.setMethodCallHandler(null);
+        eventChannel.setStreamHandler(null);
     }
-    this.activity = null;
-  }
 
-  @Override
-  public void onDetachedFromActivityForConfigChanges() {
-    onDetachedFromActivity();
-  }
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        this.activity = binding.getActivity();
+    }
 
-  @Override
-  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-    this.onAttachedToActivity(binding);
-  }
+    @Override
+    public void onDetachedFromActivity() {
+        if (listener != null) {
+            listener.stopOrientationListener();
+            listener = null;
+        }
+        this.activity = null;
+    }
 
-  @Override
-  public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
-    switch (call.method) {
-      case "getOrientation":
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity();
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        this.onAttachedToActivity(binding);
+    }
+
+    @Override
+    public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
+        switch (call.method) {
+            case "getOrientation":
+                if (activity == null) {
+                    result.error("detached", "Cannot get orientation while not attached to window", null);
+                    return;
+                }
+
+                Boolean useSensor = call.argument("useSensor");
+
+                if (useSensor != null && useSensor) {
+                    // we can't immediately retrieve a orientation from the sensor. We have to start listening
+                    // and return the first orientation retrieved.
+                    sensorReader.getOrientation(activity, orientation -> result.success(orientation.name()));
+                } else {
+                    result.success(reader.getOrientation(activity).name());
+                }
+                break;
+
+            case "pause":
+                // if a listener is currently active, stop listening. The app is going to the background
+                if (listener != null) {
+                    listener.stopOrientationListener();
+                }
+                result.success(null);
+                break;
+
+            case "resume":
+                // start listening for orientation changes again. The app is in the foreground.
+                if (listener != null) {
+                    listener.startOrientationListener();
+                }
+                result.success(null);
+                break;
+            default:
+                result.notImplemented();
+        }
+    }
+
+    @Override
+    public void onListen(Object parameters, final EventChannel.EventSink eventSink) {
         if (activity == null) {
-          result.error("detached", "Cannot get orientation while not attached to window", null);
-          return;
+            throw new IllegalStateException("Cannot start listening while activity is detached");
         }
 
-        Boolean useSensor = call.argument("useSensor");
+        boolean useSensor = false;
+        // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
+        if (parameters instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> params = (Map<String, Object>) parameters;
 
-        if (useSensor != null && useSensor) {
-          // we can't immediately retrieve a orientation from the sensor. We have to start listening
-          // and return the first orientation retrieved.
-          sensorReader.getOrientation(activity, orientation -> result.success(orientation.name()));
+            if (params.containsKey("useSensor")) {
+                Boolean useSensorNullable = (Boolean) params.get("useSensor");
+                useSensor = useSensorNullable != null && useSensorNullable;
+            }
+
+            if (params.containsKey("checkIsAutoRotate")) {
+                Boolean checkIsAutoRotateNullable = (Boolean) params.get("checkIsAutoRotate");
+                checkIsAutoRotate = checkIsAutoRotateNullable != null && checkIsAutoRotateNullable;
+            }
+        }
+
+        // initialize the callback. It is the same for both listeners.
+        IOrientationListener.OrientationCallback callback = orientation -> {
+            if (checkIsAutoRotate) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("orientation", orientation.name());
+                map.put("isAutoRotate", Settings.System.getInt(activity.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1);
+                eventSink.success(map);
+                return;
+            }
+            eventSink.success(orientation.name());
+        };
+
+        if (useSensor) {
+            Log.i("NDOP", "listening using sensor listener");
+            listener = new SensorOrientationListener(activity, callback);
         } else {
-          result.success(reader.getOrientation(activity).name());
+            Log.i("NDOP", "listening using window listener");
+            listener = new OrientationListener(reader, activity, callback);
         }
-        break;
+        listener.startOrientationListener();
+    }
 
-      case "pause":
-        // if a listener is currently active, stop listening. The app is going to the background
+    @Override
+    public void onCancel(Object arguments) {
         if (listener != null) {
-          listener.stopOrientationListener();
+            listener.stopOrientationListener();
+            listener = null;
         }
-        result.success(null);
-        break;
-
-      case "resume":
-        // start listening for orientation changes again. The app is in the foreground.
-        if (listener != null) {
-          listener.startOrientationListener();
-        }
-        result.success(null);
-        break;
-      default:
-        result.notImplemented();
     }
-  }
-
-  private boolean checkIsAutoRotate = true;
-
-  @Override
-  public void onListen(Object parameters, final EventChannel.EventSink eventSink) {
-    if (activity == null) {
-      throw new IllegalStateException("Cannot start listening while activity is detached");
-    }
-
-    boolean useSensor = false;
-    // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
-    if (parameters instanceof Map) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> params = (Map<String, Object>) parameters;
-
-      if (params.containsKey("useSensor")) {
-        Boolean useSensorNullable = (Boolean) params.get("useSensor");
-        useSensor = useSensorNullable != null && useSensorNullable;
-      }
-
-      if (params.containsKey("checkIsAutoRotate")) {
-        Boolean checkIsAutoRotateNullable = (Boolean) params.get("checkIsAutoRotate");
-        checkIsAutoRotate = checkIsAutoRotateNullable != null && checkIsAutoRotateNullable;
-      }
-    }
-
-    // initialize the callback. It is the same for both listeners.
-    IOrientationListener.OrientationCallback callback = orientation -> {
-      if (checkIsAutoRotate) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("orientation", orientation.name());
-        map.put("isAutoRotate", Settings.System.getInt(activity.getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1);
-        eventSink.success(map);
-        return;
-      }
-      eventSink.success(orientation.name());
-    };
-
-    if (useSensor) {
-      Log.i("NDOP", "listening using sensor listener");
-      listener = new SensorOrientationListener(activity, callback);
-    } else {
-      Log.i("NDOP", "listening using window listener");
-      listener = new OrientationListener(reader, activity, callback);
-    }
-    listener.startOrientationListener();
-  }
-
-  @Override
-  public void onCancel(Object arguments) {
-    if (listener != null) {
-      listener.stopOrientationListener();
-      listener = null;
-    }
-  }
 }

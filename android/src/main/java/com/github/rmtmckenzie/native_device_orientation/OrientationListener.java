@@ -8,45 +8,45 @@ import android.content.IntentFilter;
 
 public class OrientationListener implements IOrientationListener {
 
-  private static final IntentFilter orientationIntentFilter = new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED);
+    private static final IntentFilter orientationIntentFilter = new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED);
 
-  private final OrientationReader reader;
-  private final Activity activity;
-  private final OrientationCallback callback;
-  private BroadcastReceiver broadcastReceiver;
-  private NativeOrientation lastOrientation = null;
+    private final OrientationReader reader;
+    private final Activity activity;
+    private final OrientationCallback callback;
+    private BroadcastReceiver broadcastReceiver;
+    private NativeOrientation lastOrientation = null;
 
-  public OrientationListener(OrientationReader reader, Activity activity, OrientationCallback callback) {
-    this.reader = reader;
-    this.activity = activity;
-    this.callback = callback;
-  }
+    public OrientationListener(OrientationReader reader, Activity activity, OrientationCallback callback) {
+        this.reader = reader;
+        this.activity = activity;
+        this.callback = callback;
+    }
 
-  public void startOrientationListener() {
-    if (broadcastReceiver != null) return;
+    public void startOrientationListener() {
+        if (broadcastReceiver != null) return;
 
-    broadcastReceiver = new BroadcastReceiver() {
-      @Override
-      public void onReceive(Context context, Intent intent) {
-        NativeOrientation orientation = reader.getOrientation(activity);
-        if (!orientation.equals(lastOrientation)) {
-          lastOrientation = orientation;
-          callback.receive(orientation);
-        }
-      }
-    };
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                NativeOrientation orientation = reader.getOrientation(activity);
+                if (!orientation.equals(lastOrientation)) {
+                    lastOrientation = orientation;
+                    callback.receive(orientation);
+                }
+            }
+        };
 
-    activity.registerReceiver(broadcastReceiver, orientationIntentFilter);
+        activity.registerReceiver(broadcastReceiver, orientationIntentFilter);
 
-    lastOrientation = reader.getOrientation(activity);
-    // send initial orientation.
-    callback.receive(lastOrientation);
-  }
+        lastOrientation = reader.getOrientation(activity);
+        // send initial orientation.
+        callback.receive(lastOrientation);
+    }
 
-  public void stopOrientationListener() {
-    if (broadcastReceiver == null) return;
-    activity.unregisterReceiver(broadcastReceiver);
-    broadcastReceiver = null;
-  }
+    public void stopOrientationListener() {
+        if (broadcastReceiver == null) return;
+        activity.unregisterReceiver(broadcastReceiver);
+        broadcastReceiver = null;
+    }
 
 }
