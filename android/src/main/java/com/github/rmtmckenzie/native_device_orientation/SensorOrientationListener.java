@@ -13,27 +13,14 @@ import java.util.Objects;
 public class SensorOrientationListener implements IOrientationListener {
     private final Activity activity;
     private final OrientationCallback callback;
-    private final Rate rate;
     private OrientationEventListener orientationEventListener;
     private NativeOrientation lastOrientation = null;
     private int angleOffset = 0;
 
-    public SensorOrientationListener(Activity activity, OrientationCallback callback, Rate rate) {
+    public SensorOrientationListener(Activity activity, OrientationCallback callback) {
         this.activity = activity;
         this.callback = callback;
-        this.rate = rate;
-        // orientation is 0 in the default orientation mode. This is portait-mode for phones
-        // and landscape for tablets. We have to compensate this by calculating the default orientation,
-        // and applying an offset.
-        int defaultDeviceOrientation = getDeviceDefaultOrientation();
-        if (defaultDeviceOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // add offset to landscape
-            angleOffset = 270;
-        }
-    }
-
-    public SensorOrientationListener(Activity activity, OrientationCallback callback) {
-        this(activity, callback, Rate.ui);
+        checkOrientation();
     }
 
     @Override
@@ -43,14 +30,23 @@ public class SensorOrientationListener implements IOrientationListener {
             return;
         }
 
-        orientationEventListener = new OrientationEventListener(activity, rate.nativeValue) {
+        orientationEventListener = new OrientationEventListener(activity, SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int angle) {
                 NativeOrientation newOrientation = calculateSensorOrientation(angle);
 
                 if (newOrientation != null && !newOrientation.equals(lastOrientation)) {
-                    lastOrientation = newOrientation;
-                    callback.receive(newOrientation);
+                    int lastAngleOffset = angleOffset;
+                    checkOrientation();
+                    if (lastAngleOffset != angleOffset) {
+                        // correct angleOffset
+//                        Log.i("NDOP", "correct angle offset");
+                        onOrientationChanged(angle);
+                    } else {
+                        lastOrientation = newOrientation;
+                        callback.receive(newOrientation);
+                    }
+
                 }
             }
         };
@@ -58,6 +54,20 @@ public class SensorOrientationListener implements IOrientationListener {
             orientationEventListener.enable();
         }
     }
+
+    private void checkOrientation() {
+        // orientation is 0 in the default orientation mode. This is portait-mode for phones
+        // and landscape for tablets. We have to compensate this by calculating the default orientation,
+        // and applying an offset.
+        int defaultDeviceOrientation = getDeviceDefaultOrientation();
+        if (defaultDeviceOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // add offset to landscape
+            angleOffset = 270;
+        } else {
+            angleOffset = 0;
+        }
+    }
+
 
     @Override
     public void stopOrientationListener() {
@@ -103,22 +113,11 @@ public class SensorOrientationListener implements IOrientationListener {
                 config.orientation == Configuration.ORIENTATION_LANDSCAPE)
                 || ((rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) &&
                 config.orientation == Configuration.ORIENTATION_PORTRAIT)) {
+//            Log.i("NDOP", "LANDSCAPE");
             return Configuration.ORIENTATION_LANDSCAPE;
         } else {
+//            Log.i("NDOP", "PORTRAIT");
             return Configuration.ORIENTATION_PORTRAIT;
-        }
-    }
-
-    enum Rate {
-        normal(SensorManager.SENSOR_DELAY_NORMAL),
-        ui(SensorManager.SENSOR_DELAY_UI),
-        game(SensorManager.SENSOR_DELAY_GAME),
-        fastest(SensorManager.SENSOR_DELAY_FASTEST);
-
-        final int nativeValue;
-
-        Rate(int nativeValue) {
-            this.nativeValue = nativeValue;
         }
     }
 }
