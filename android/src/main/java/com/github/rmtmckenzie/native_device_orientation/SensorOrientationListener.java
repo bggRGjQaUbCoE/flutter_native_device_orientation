@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.res.Configuration;
 import android.hardware.SensorManager;
 import android.os.Build;
-import android.view.OrientationEventListener;
 import android.view.Surface;
 
 import java.util.Objects;
