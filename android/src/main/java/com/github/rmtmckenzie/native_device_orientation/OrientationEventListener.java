@@ -124,7 +124,7 @@ public abstract class OrientationEventListener {
             float Z = -values[_DATA_Z];
             float magnitude = X * X + Y * Y;
             // Don't trust the angle if the magnitude is small compared to the y value
-            if (magnitude >= Z * Z * 2) {
+            if (magnitude >= Z * Z) {
                 float OneEightyOverPi = 57.29577957855f;
                 float angle = (float) Math.atan2(-Y, X) * OneEightyOverPi;
                 orientation = 90 - (int) Math.round(angle);
