@@ -1,10 +1,14 @@
 package com.github.rmtmckenzie.native_device_orientation;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.view.Surface;
+import android.view.WindowManager;
 
 import java.util.Objects;
 
@@ -79,7 +83,6 @@ public class SensorOrientationListener implements IOrientationListener {
 
     public NativeOrientation calculateSensorOrientation(int angle) {
         if (angle == OrientationEventListener.ORIENTATION_UNKNOWN) {
-            // return NativeOrientation.Unknown;
             return null;
         }
         NativeOrientation returnOrientation = null;
@@ -88,13 +91,13 @@ public class SensorOrientationListener implements IOrientationListener {
         angle = angle % 360;
 
         if (angle < 10 || angle > 350) {
-            returnOrientation = NativeOrientation.PortraitUp;
+            returnOrientation = NativeOrientation.portraitUp;
         } else if (angle > 80 && angle < 100) {
-            returnOrientation = NativeOrientation.LandscapeRight;
+            returnOrientation = NativeOrientation.landscapeRight;
         } else if (angle > 170 && angle < 190) {
-            returnOrientation = NativeOrientation.PortraitDown;
+            returnOrientation = NativeOrientation.portraitDown;
         } else if (angle > 260 && angle < 280) {
-            returnOrientation = NativeOrientation.LandscapeLeft;
+            returnOrientation = NativeOrientation.landscapeLeft;
         }
 
         return returnOrientation;
@@ -107,7 +110,7 @@ public class SensorOrientationListener implements IOrientationListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             rotation = Objects.requireNonNull(activity.getDisplay()).getRotation();
         } else {
-            rotation = OrientationReader.getRotationOld(activity);
+            rotation = getRotationOld();
         }
 
         if (((rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) &&
@@ -120,5 +123,12 @@ public class SensorOrientationListener implements IOrientationListener {
 //            Log.i("NDOP", "PORTRAIT");
             return Configuration.ORIENTATION_PORTRAIT;
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    @SuppressWarnings("deprecation")
+    int getRotationOld() {
+        WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        return windowManager.getDefaultDisplay().getRotation();
     }
 }

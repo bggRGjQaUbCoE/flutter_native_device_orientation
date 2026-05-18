@@ -4,11 +4,10 @@ import UIKit
 let METHOD_CHANEL:String = "native_device_orientation"
 let EVENT_CHANNEL:String = "native_device_orientation_events"
 
-let PORTRAIT_UP:String! = "PortraitUp"
-let PORTRAIT_DOWN:String! = "PortraitDown"
-let LANDSCAPE_LEFT:String! = "LandscapeLeft"
-let LANDSCAPE_RIGHT:String! = "LandscapeRight"
-let UNKNOWN:String! = "Unknown"
+let PORTRAIT_UP:String! = "portraitUp"
+let PORTRAIT_DOWN:String! = "portraitDown"
+let LANDSCAPE_LEFT:String! = "landscapeLeft"
+let LANDSCAPE_RIGHT:String! = "landscapeRight"
 
 public class NativeDeviceOrientationPlugin: NSObject, FlutterPlugin {
   
@@ -59,13 +58,8 @@ extension NativeDeviceOrientationPlugin: FlutterStreamHandler {
   public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
     let argReader = MapArgumentReader(arguments as? [String: Any])
     
-    let listener: OrientationListener
-    if argReader.bool(key: "useSensor") ?? false {
-      listener = SensorListener{ events($0) }
-    } else {
-      listener = DisplayOrientationListener{ events($0) }
-    }
-    
+    let listener: OrientationListener = DisplayOrientationListener{ events($0) }
+
     if let error = listener.start() {
       return error
     }

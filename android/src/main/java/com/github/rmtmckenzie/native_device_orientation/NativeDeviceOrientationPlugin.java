@@ -22,7 +22,6 @@ import io.flutter.plugin.common.MethodChannel.Result;
  * NativeDeviceOrientationPlugin
  */
 public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler, ActivityAware {
-    private final OrientationReader reader = new OrientationReader();
     private MethodChannel channel;
     private EventChannel eventChannel;
     private Activity activity;
@@ -101,17 +100,11 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
             throw new IllegalStateException("Cannot start listening while activity is detached");
         }
 
-        boolean useSensor = false;
         int angleDegrees = 30;
         // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
         if (parameters instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> params = (Map<String, Object>) parameters;
-
-            if (params.containsKey("useSensor")) {
-                Boolean useSensorNullable = (Boolean) params.get("useSensor");
-                useSensor = useSensorNullable != null && useSensorNullable;
-            }
 
             if (params.containsKey("checkIsAutoRotate")) {
                 Boolean checkIsAutoRotateNullable = (Boolean) params.get("checkIsAutoRotate");
@@ -138,13 +131,7 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
             eventSink.success(orientation.name());
         };
 
-        if (useSensor) {
-            Log.i("NDOP", "listening using sensor listener");
-            listener = new SensorOrientationListener(activity, callback, angleDegrees);
-        } else {
-            Log.i("NDOP", "listening using window listener");
-            listener = new OrientationListener(reader, activity, callback);
-        }
+        listener = new SensorOrientationListener(activity, callback, angleDegrees);
         listener.startOrientationListener();
     }
 

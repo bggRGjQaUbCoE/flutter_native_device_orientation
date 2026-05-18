@@ -10,9 +10,7 @@ class MockDeviceOrientationPlatform
   @override
   Stream<OrientationParams> onOrientationChanged({
     int? angleDegrees,
-    bool useSensor = false,
     bool checkIsAutoRotate = true,
-    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) async* {
     yield (orientation: DeviceOrientation.landscapeLeft, isAutoRotate: null);
     yield (orientation: DeviceOrientation.landscapeRight, isAutoRotate: null);

@@ -3,27 +3,16 @@ import 'package:flutter/services.dart'
     show MethodChannel, EventChannel, DeviceOrientation;
 import 'package:native_device_orientation/src/native_device_orientation_platform_interface.dart';
 
-DeviceOrientation _fromString(
-  String orientationString,
-  DeviceOrientation defaultOrientation,
-) =>
-    switch (orientationString) {
-      'PortraitUp' => DeviceOrientation.portraitUp,
-      'PortraitDown' => DeviceOrientation.portraitDown,
-      'LandscapeLeft' => DeviceOrientation.landscapeLeft,
-      'LandscapeRight' => DeviceOrientation.landscapeRight,
-      _ => defaultOrientation,
-    };
+DeviceOrientation _fromString(String orientationString) =>
+    DeviceOrientation.values.byName(orientationString);
 
 class _OrientationStream {
   final Stream<OrientationParams> stream;
-  final bool useSensor;
   final int? angleDegrees;
   final bool checkIsAutoRotate;
 
   _OrientationStream({
     required this.stream,
-    required this.useSensor,
     this.angleDegrees,
     required this.checkIsAutoRotate,
   });
@@ -53,16 +42,12 @@ class MethodChannelNativeDeviceOrientation
   @override
   Stream<OrientationParams> onOrientationChanged({
     int? angleDegrees,
-    bool useSensor = false,
     bool checkIsAutoRotate = true,
-    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) {
     if (_stream == null ||
-        _stream!.useSensor != useSensor ||
         _stream!.angleDegrees != angleDegrees ||
         _stream!.checkIsAutoRotate != checkIsAutoRotate) {
       final params = <String, dynamic>{
-        'useSensor': useSensor,
         'angleDegrees': angleDegrees,
         'checkIsAutoRotate': checkIsAutoRotate,
       };
@@ -71,17 +56,15 @@ class MethodChannelNativeDeviceOrientation
             eventChannel.receiveBroadcastStream(params).map((dynamic event) {
           if (event is Map) {
             return (
-              orientation:
-                  _fromString(event['orientation'], defaultOrientation),
+              orientation: _fromString(event['orientation']),
               isAutoRotate: event['isAutoRotate'],
             );
           }
           return (
-            orientation: _fromString(event, defaultOrientation),
+            orientation: _fromString(event),
             isAutoRotate: null,
           );
         }),
-        useSensor: useSensor,
         angleDegrees: angleDegrees,
         checkIsAutoRotate: checkIsAutoRotate,
       );
