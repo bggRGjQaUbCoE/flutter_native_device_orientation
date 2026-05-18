@@ -15,10 +15,12 @@ public class SensorOrientationListener implements IOrientationListener {
     private OrientationEventListener orientationEventListener;
     private NativeOrientation lastOrientation = null;
     private int angleOffset = 0;
+    private final int angleDegrees;
 
-    public SensorOrientationListener(Activity activity, OrientationCallback callback) {
+    public SensorOrientationListener(Activity activity, OrientationCallback callback, int angleDegrees) {
         this.activity = activity;
         this.callback = callback;
+        this.angleDegrees = angleDegrees;
         checkOrientation();
     }
 
@@ -29,7 +31,7 @@ public class SensorOrientationListener implements IOrientationListener {
             return;
         }
 
-        orientationEventListener = new OrientationEventListener(activity, SensorManager.SENSOR_DELAY_NORMAL) {
+        orientationEventListener = new OrientationEventListener(activity, SensorManager.SENSOR_DELAY_NORMAL, angleDegrees) {
             @Override
             public void onOrientationChanged(int angle) {
                 NativeOrientation newOrientation = calculateSensorOrientation(angle);

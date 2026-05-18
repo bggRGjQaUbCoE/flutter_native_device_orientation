@@ -23,7 +23,6 @@ import io.flutter.plugin.common.MethodChannel.Result;
  */
 public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler, ActivityAware {
     private final OrientationReader reader = new OrientationReader();
-    private final SensorOrientationReader sensorReader = new SensorOrientationReader();
     private MethodChannel channel;
     private EventChannel eventChannel;
     private Activity activity;
@@ -76,23 +75,6 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
         switch (call.method) {
-            case "getOrientation":
-                if (activity == null) {
-                    result.error("detached", "Cannot get orientation while not attached to window", null);
-                    return;
-                }
-
-                Boolean useSensor = call.argument("useSensor");
-
-                if (useSensor != null && useSensor) {
-                    // we can't immediately retrieve a orientation from the sensor. We have to start listening
-                    // and return the first orientation retrieved.
-                    sensorReader.getOrientation(activity, orientation -> result.success(orientation.name()));
-                } else {
-                    result.success(reader.getOrientation(activity).name());
-                }
-                break;
-
             case "pause":
                 // if a listener is currently active, stop listening. The app is going to the background
                 if (listener != null) {
@@ -120,6 +102,7 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
         }
 
         boolean useSensor = false;
+        int angleDegrees = 30;
         // used hashMap to send parameters to this method. This makes it easier in the future to add new parameters if needed.
         if (parameters instanceof Map) {
             @SuppressWarnings("unchecked")
@@ -133,6 +116,13 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
             if (params.containsKey("checkIsAutoRotate")) {
                 Boolean checkIsAutoRotateNullable = (Boolean) params.get("checkIsAutoRotate");
                 checkIsAutoRotate = checkIsAutoRotateNullable != null && checkIsAutoRotateNullable;
+            }
+
+            if (params.containsKey("angleDegrees")) {
+                Integer angleDegreesNullable = (Integer) params.get("angleDegrees");
+                if (angleDegreesNullable != null) {
+                    angleDegrees = angleDegreesNullable;
+                }
             }
         }
 
@@ -150,7 +140,7 @@ public class NativeDeviceOrientationPlugin implements FlutterPlugin, MethodCallH
 
         if (useSensor) {
             Log.i("NDOP", "listening using sensor listener");
-            listener = new SensorOrientationListener(activity, callback);
+            listener = new SensorOrientationListener(activity, callback, angleDegrees);
         } else {
             Log.i("NDOP", "listening using window listener");
             listener = new OrientationListener(reader, activity, callback);

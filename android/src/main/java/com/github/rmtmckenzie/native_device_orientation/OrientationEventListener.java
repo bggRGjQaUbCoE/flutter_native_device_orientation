@@ -39,6 +39,7 @@ public abstract class OrientationEventListener {
     private Sensor mSensor;
     private SensorEventListener mSensorEventListener;
     private OrientationListener mOldListener;
+    private double mTanAngle2;
 
     /**
      * Returned from onOrientationChanged when the device orientation cannot be determined
@@ -53,9 +54,9 @@ public abstract class OrientationEventListener {
      *
      * @param context for the OrientationEventListener.
      */
-    public OrientationEventListener(Context context) {
-        this(context, SensorManager.SENSOR_DELAY_NORMAL);
-    }
+//    public OrientationEventListener(Context context, int angleDegrees) {
+//        this(context, SensorManager.SENSOR_DELAY_NORMAL, angleDegrees);
+//    }
 
     /**
      * Creates a new OrientationEventListener.
@@ -66,7 +67,7 @@ public abstract class OrientationEventListener {
      *                value of {@link SensorManager#SENSOR_DELAY_NORMAL
      *                SENSOR_DELAY_NORMAL} for simple screen orientation change detection.
      */
-    public OrientationEventListener(Context context, int rate) {
+    public OrientationEventListener(Context context, int rate, int angleDegrees) {
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mRate = rate;
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -74,6 +75,9 @@ public abstract class OrientationEventListener {
             // Create listener only if sensors do exist
             mSensorEventListener = new SensorEventListenerImpl();
         }
+        double angleRadians = Math.toRadians(angleDegrees);
+        double tanValue = Math.tan(angleRadians);
+        mTanAngle2 = tanValue * tanValue;
     }
 
     void registerListener(OrientationListener lis) {
@@ -124,7 +128,7 @@ public abstract class OrientationEventListener {
             float Z = -values[_DATA_Z];
             float magnitude = X * X + Y * Y;
             // Don't trust the angle if the magnitude is small compared to the y value
-            if (magnitude >= Z * Z) {
+            if (magnitude / (Z * Z) >= mTanAngle2) {
                 float OneEightyOverPi = 57.29577957855f;
                 float angle = (float) Math.atan2(-Y, X) * OneEightyOverPi;
                 orientation = 90 - (int) Math.round(angle);

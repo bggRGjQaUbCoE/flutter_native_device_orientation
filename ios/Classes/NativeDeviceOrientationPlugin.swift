@@ -29,8 +29,6 @@ public class NativeDeviceOrientationPlugin: NSObject, FlutterPlugin {
     let argReader = MapArgumentReader(call.arguments as? [String: Any])
     
     switch call.method {
-    case "getOrientation":
-      getOrientation(useSensor: argReader.bool(key: "useSensor") ?? false, result: result)
     case "pause":
       pause()
       result(nil)
@@ -40,20 +38,6 @@ public class NativeDeviceOrientationPlugin: NSObject, FlutterPlugin {
       result(FlutterMethodNotImplemented)
     }
   }
-  
-  private func getOrientation(useSensor: Bool, result: @escaping FlutterResult) {
-    let listener: OrientationListener
-    if useSensor {
-      listener = SensorListener(callback: result)
-    } else {
-      listener = DisplayOrientationListener(callback: result)
-    }
-    
-    if let error = listener.once() {
-      result(error)
-    }
-  }
-  
 }
 
 extension NativeDeviceOrientationPlugin: FlutterStreamHandler {

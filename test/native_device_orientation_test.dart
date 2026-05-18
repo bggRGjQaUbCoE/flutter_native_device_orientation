@@ -9,24 +9,13 @@ class MockDeviceOrientationPlatform
     implements NativeDeviceOrientationPlatform {
   @override
   Stream<OrientationParams> onOrientationChanged({
+    int? angleDegrees,
     bool useSensor = false,
     bool checkIsAutoRotate = true,
     DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) async* {
     yield (orientation: DeviceOrientation.landscapeLeft, isAutoRotate: null);
     yield (orientation: DeviceOrientation.landscapeRight, isAutoRotate: null);
-  }
-
-  @override
-  Future<DeviceOrientation> orientation({
-    bool useSensor = false,
-    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
-  }) async {
-    if (useSensor) {
-      return DeviceOrientation.landscapeLeft;
-    } else {
-      return DeviceOrientation.landscapeRight;
-    }
   }
 
   @override
@@ -58,16 +47,6 @@ void main() {
 
     test('resume', () async {
       await NativeDeviceOrientationPlatform.instance.resume();
-    });
-
-    test('orientation', () async {
-      expect(await NativeDeviceOrientationPlatform.instance.orientation(),
-          DeviceOrientation.landscapeRight);
-      expect(
-        await NativeDeviceOrientationPlatform.instance
-            .orientation(useSensor: true),
-        DeviceOrientation.landscapeLeft,
-      );
     });
 
     test('onOrientationChanged', () async {

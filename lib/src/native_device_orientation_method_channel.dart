@@ -18,8 +18,15 @@ DeviceOrientation _fromString(
 class _OrientationStream {
   final Stream<OrientationParams> stream;
   final bool useSensor;
+  final int? angleDegrees;
+  final bool checkIsAutoRotate;
 
-  _OrientationStream({required this.stream, required this.useSensor});
+  _OrientationStream({
+    required this.stream,
+    required this.useSensor,
+    this.angleDegrees,
+    required this.checkIsAutoRotate,
+  });
 }
 
 /// An implementation of [NativeDeviceOrientationPlatform] that uses method channels.
@@ -44,25 +51,19 @@ class MethodChannelNativeDeviceOrientation
   }
 
   @override
-  Future<DeviceOrientation> orientation({
-    bool useSensor = false,
-    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
-  }) async {
-    final params = <String, dynamic>{'useSensor': useSensor};
-    final orientationString =
-        await methodChannel.invokeMethod('getOrientation', params);
-    return _fromString(orientationString, defaultOrientation);
-  }
-
-  @override
   Stream<OrientationParams> onOrientationChanged({
+    int? angleDegrees,
     bool useSensor = false,
     bool checkIsAutoRotate = true,
     DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
   }) {
-    if (_stream == null || _stream!.useSensor != useSensor) {
+    if (_stream == null ||
+        _stream!.useSensor != useSensor ||
+        _stream!.angleDegrees != angleDegrees ||
+        _stream!.checkIsAutoRotate != checkIsAutoRotate) {
       final params = <String, dynamic>{
         'useSensor': useSensor,
+        'angleDegrees': angleDegrees,
         'checkIsAutoRotate': checkIsAutoRotate,
       };
       _stream = _OrientationStream(
@@ -81,6 +82,8 @@ class MethodChannelNativeDeviceOrientation
           );
         }),
         useSensor: useSensor,
+        angleDegrees: angleDegrees,
+        checkIsAutoRotate: checkIsAutoRotate,
       );
     }
     return _stream!.stream;

@@ -33,12 +33,8 @@ abstract class NativeDeviceOrientationPlatform extends PlatformInterface {
 
   Future<void> resume();
 
-  Future<DeviceOrientation> orientation({
-    bool useSensor = false,
-    DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
-  });
-
   Stream<OrientationParams> onOrientationChanged({
+    int? angleDegrees,
     bool useSensor = false,
     bool checkIsAutoRotate = true,
     DeviceOrientation defaultOrientation = DeviceOrientation.portraitUp,
